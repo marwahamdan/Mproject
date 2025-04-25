@@ -47,3 +47,19 @@ $ pip install -r requirements.txt
 ```bash
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
+
+## 📁 Project Structure
+
+```
+├── assets/        # Temporary storage for uploaded files
+├── controllers/   # Core business logic, organized by features such as file validation, text extraction, and chunking
+├── core/          # Configuration, dependency setup, and utility methods
+├── dtos/          # Request and Response schemas for each API endpoint
+├── llm/           # Logic for handling LLM scripts and provider integrations
+├── routes/        # API route definitions
+├── schemas/       # MongoDB entity schemas
+├── services/      # CRUD operations for MongoDB entities
+├── vectordb/      # Vector database provider integration and management
+```
+
+Each folder in the project follows a specific responsibility, ensuring a clean separation of concerns and maintainability.
