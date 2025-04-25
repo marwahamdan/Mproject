@@ -1,10 +1,8 @@
 # Reparameterized Foundation – AI Assistant for the Syrian Post-Crisis Platform
 # RPF AI CORE
 
-<<<<<<< HEAD
 ## Getting started
 
-=======
 This project is an AI-powered assistant developed for the **Reparameterized Foundation**. It supports the **Syrian Post-Crisis Platform**, a centralized hub that aids in data collection, visualization, and statistical reporting for rebuilding Syria.
 
 ## 💡 Project Overview
@@ -66,5 +64,3 @@ $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ├── vectordb/      # Vector database provider integration and management
 ```
 
-Each folder in the project follows a specific responsibility, ensuring a clean separation of concerns and maintainability.
->>>>>>> 3bb80fae2555db99cf05fd9d7a349e3353e4b832
