@@ -1,4 +1,4 @@
-# 🇸🇾 Reparameterized Foundation – AI Assistant for the Syrian Post-Crisis Platform
+# Reparameterized Foundation – AI Assistant for the Syrian Post-Crisis Platform
 # RPF AI CORE
 
 This project is an AI-powered assistant developed for the **Reparameterized Foundation**. It supports the **Syrian Post-Crisis Platform**, a centralized hub that aids in data collection, visualization, and statistical reporting for rebuilding Syria.
