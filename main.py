@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from routes.data import router as data_router
 from core.config import get_settings
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from vectordb import VectorDBProviderFactory
 from llm import LLMProviderFactory
 from llm.prompt_templates import TemplateParser
-
+from routes import base_router, data_router
 app = FastAPI()
 
 # =================Logger Configurations=================
@@ -97,7 +96,8 @@ async def shutdown():
     
     
     
-# =================Routers Configurations=================     
+# =================Routers Configurations=================  
+app.include_router(base_router)
 app.include_router(data_router)
 
 
