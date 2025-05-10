@@ -1,52 +1,103 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from routes.data import router as data_router
+from core.config import get_settings
+import logging
+from fastapi.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+from vectordb import VectorDBProviderFactory
+from llm import LLMProviderFactory
+from llm.prompt_templates import TemplateParser
 
 app = FastAPI()
 
+# =================Logger Configurations=================
+logging.basicConfig(
+    level=logging.INFO,  
+    format='%(name)s - %(levelname)s - %(message)s',  # Message format
+    datefmt='%Y-%m-%d %H:%M:%S',  
+    handlers=[
+        logging.StreamHandler(),  # Logs to the console
+    ]
+)
 
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 Megabytes in bytes
+logger = logging.getLogger(__name__)
 
-@app.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
+# =================CORS Configurations=================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # This allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # This allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # This allows all headers
+)
+
+@app.on_event("startup")
+async def startup():
+    settings = get_settings()
+
+    # # ======================MongoDB Intialization ======================
+    # try:
+    #     app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)
+    #     app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]
+    #     logger.info(f"Connected to MongoDB Atlas")
+    # except Exception as e:
+    #     logger.error(f"Error connecting to MongoDB: {str(e)}")
+    
+    
+        # =================VectorDB Initialization=================
+    # try:
+    #     vector_db_provider_factory = VectorDBProviderFactory(settings)
+
+    #     app.vectordb_client = vector_db_provider_factory.create(provider = settings.VECTORDB_BACKEND)
+    #     app.vectordb_client.connect()
+
+    #     logger.info("VectorDB provider has been initialized successfully")
+    
+    # except Exception as e:
+    #     logger.error(f"Error initializing VectorDB: {str(e)}")
+        
+        
+        # =================LLM Initialization=================
     try:
-        # Check if a file was actually uploaded
-        if not file:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No file uploaded. Please upload a valid file."
-            )
+        llm_provider_factory = LLMProviderFactory(settings)
 
-        # Read the file contents
-        contents = await file.read()
-
-        # Check if the uploaded file is empty
-        if len(contents) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Uploaded file is empty."
-            )
-
-        # Check if the file size exceeds the maximum allowed size
-        if len(contents) > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE // (1024*1024)}MB."
-            )
-
-        # If all checks pass, return a success response
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "message": "File uploaded successfully!",
-                "filename": file.filename,
-                "size_in_bytes": len(contents)
-            }
+        # Generation Client
+        app.generation_client = llm_provider_factory.create(provider = settings.GENERATION_BACKEND)
+        app.generation_client.set_generation_model(model_id = settings.GENERATION_MODEL_ID)
+        
+        # Embedding Client
+        app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_BACKEND)
+        app.embedding_client.set_embedding_model(
+            model_id=settings.EMBEDDING_MODEL_ID,
+            embedding_size=1536  # For OpenAI's text-embedding-ada-002 model
         )
+
+        logger.info(f"LLM Generation Model has beed initialized : {settings.GENERATION_MODEL_ID}")
+        logger.info(f"LLM Embedding Model has beed initialized : {settings.EMBEDDING_MODEL_ID}")
 
     except Exception as e:
-        # Handle any unexpected errors gracefully
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while uploading the file: {str(e)}"
+        logger.error(f"Error initializing LLM: {str(e)}")
+    
+    
+    # =================Template Parser Initialization=================
+    try:
+        app.template_parser = TemplateParser(
+        language = settings.PRIMARY_LANGUAGE,
+        default_language = settings.DEFAULT_LANGUAGE
         )
+        logger.info(f"Template Parser has been initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing Template Parser: {str(e)}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    app.mongo_conn.close()
+    app.vectordb_client.disconnect()     
+    
+    
+    
+# =================Routers Configurations=================     
+app.include_router(data_router)
+
 
